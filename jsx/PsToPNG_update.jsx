@@ -742,20 +742,21 @@ function run () {
 		return;
 	}
 
+	mergeDoc = activeDocument;
+	var groups = [];
+    // Add a layer at top to prevent occur error while merging group at top.
+    activeDocument.artLayers.add();
+
+	//heiheihei
 	// Merge all groups, except slot groups and skin group while groupsAsSkins.
 	if (mergeGroups) {
-		mergeDoc = activeDocument;
-		var groups = [];
-        // Add a layer at top to prevent occur error while merging group at top.
-        activeDocument.artLayers.add();
 		collectGroups(activeDocument, groups);
 		mergeEachGroups(groups);
-
-		activeDocument.duplicate();
-        
-        if (mergeDoc) mergeDoc.close(SaveOptions.DONOTSAVECHANGES);
 	}
-	
+
+	activeDocument.duplicate();
+	if (mergeGroups && mergeDoc) mergeDoc.close(SaveOptions.DONOTSAVECHANGES);
+
 	// Rasterize all layers.
 	try {
 		executeAction(sID( "rasterizeAll" ), undefined, DialogModes.NO);
