@@ -1,3 +1,5 @@
+![image](https://github.com/LawrenLang/canned_fish/blob/main/boom.jpg)
+
 # canned_fish
    欢迎使用图片裁切（摸鱼）软件“鱼罐头”，以下是“鱼罐头”的功能以及操作指南：
 
