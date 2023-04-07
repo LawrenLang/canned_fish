@@ -118,6 +118,8 @@ app.bringToFront();
 // Note: Layer name is case-sensitive.
 //
 
+// write slot JSON
+var pngToJson = false;
 // SETTING DEFAULTS --------------------------------------------------------------------------------
 var writePngs = true;
 var writeTemplate = false;
@@ -206,7 +208,7 @@ if (isPSCC()) {
     };
 }
 // DEBUG
-var startTime; 
+var startTime;
 var endTime;
 var autoCloseDoc = true;
 
@@ -228,6 +230,7 @@ const ignoreGrayLabelLayersID = sID("ignoreGrayLabelLayers");
 const ignoreStartsWithUnderscoreLayersID = sID("ignoreStartsWithUnderscoreLayers");
 const useRootLayerID = sID("useRootLayer");
 const mergeGroupsID = sID("mergeGroups");
+const pngToJsonID = sID("pngToJson");
 const allowTrimLayersID = sID("allowTrimLayers");
 const trimAwayLeftID = sID("trimAwayLeft");
 const trimAwayRightID = sID("trimAwayRight");
@@ -602,6 +605,11 @@ const STR_CHANGE_TO_RGB_MODE = {
     TC : "請將圖像轉為 RGB 色彩模式",
     SC : "请将图像转为 RGB 色彩模式"
 }
+const STR_PNG_TO_JSON={
+	EN : "png to json",
+	TC : "图层输出json",
+	SC : "图层输出json"
+}
 // LOCALIZATION END --------------------------------------------------------------------------------
 
 // For debug.
@@ -816,7 +824,8 @@ function run () {
 	if (groupsAsSkins) slots = resortSlotsOrder(slots, skinsOnlySlots);
 	
 	// Output skeleton and bones --------------------------------------------------
-	var json = '{\n"skeleton": { "images": "' + relImagesDir + '" },';
+	var json = "";
+	json += '{\n"skeleton": { "images": "' + relImagesDir + '" },';
 	json += '\n"bones": [\n\t{ "name": "root" }\n],\n';
 
 	// Output slots data --------------------------------------------------
@@ -1033,6 +1042,58 @@ function run () {
 				layersInSlotIndex = 0;
 				json += skinLayerIndex < skinLayersCount ? ",\n" : "\n";
 			}
+
+			if (pngToJson) {
+				var m_json = "";
+				m_json += '{\n"skeleton": { "images": "' + relImagesDir + '" },';
+				m_json += '\n"bones": [\n\t{ "name": "root" }\n],\n';
+			
+				// Output slots data --------------------------------------------------
+				m_json += '"slots": [\n';
+			
+				m_json += '\t{ "name": "' + slotName + '", "bone": "root", "attachment": "' + attachmentName + '"';
+				// Write opacity
+				if (layersOpacity[slotName] != null) {
+					// Convert opacity value from 0-100 to 0-255.
+					m_json += ', "color": "ffffff' + Math.round(layersOpacity[slotName] * 2.55).toString(16) + '"';
+				}
+				// Write blendmode
+				if (layersBlend[slotName] != null) {
+					m_json += ', "blend": "' + layersBlend[slotName] + '"';
+				}
+				m_json += ' }\n],\n';
+
+				// Output skins ----------------------------------------------------------------------------------------------------
+				m_json += '"skins": {\n';
+				m_json += '\t"default": {\n';
+				
+				m_json += '\t\t"' + slotName + '": {';
+				m_json += '\n\t\t\t"' + placeholderName + '": {';
+				
+				// Write position
+				m_json += '"x": ' + mathRound(x, 1) + ',"y": ' + mathRound(y, 1);
+				// Write custom scale
+				if (customScale != 1) m_json += ',"scaleX": ' + outScale + ',"scaleY": ' + outScale;
+				// Write custom rotate
+				if (customRotate != 0) m_json += ',"rotation": ' + customRotate;
+				// Write size
+				m_json += ',"width": ' + Math.round(canvasWidth) + ',"height": ' + Math.round(canvasHeight);
+				// Write end of code
+
+				// End the skins
+				m_json += ' }\n\t\t}\n\t}\n},\n';
+
+				// Output animations. --------------------------------------------------
+				m_json += '"animations":{\n\t"animation": {}\n}\n}';
+
+
+				var file = new File(absProjectDir + slotName + ".json");
+				file.remove();
+				file.open("w", "TEXT");
+				file.lineFeed = "\n";
+				file.write(m_json);
+				file.close();			
+			}
 		}
 		if (skinLayersCount > 0) json += "\t";
 		json += "\}";
@@ -1131,9 +1192,9 @@ function showDialog () {
 			mergeGroupsCheckbox.value = mergeGroups;
 			var resampleToScreenDpiCheckbox = group.add("checkbox", undefined, STR_RESAMPLE_TO_SCREEN_DPI[currentLanguage]);
 			resampleToScreenDpiCheckbox.value = resampleToScreenDpi;
-			var emptyCheckbox = group.add("checkbox", undefined, " Empty");
-			emptyCheckbox.visible = false;
-			emptyCheckbox.enabled = false;
+			var pngToJsonCheckbox = group.add("checkbox", undefined, STR_PNG_TO_JSON[currentLanguage]);
+			pngToJsonCheckbox.value = pngToJson;
+
     /*
 			var emptyCheckbox = group.add("checkbox", undefined, " Empty");
 			emptyCheckbox.visible = false;
@@ -1334,6 +1395,7 @@ function showDialog () {
         }
 
 	function updateSettings () {
+		pngToJson = pngToJsonCheckbox.value;
 		writePngs = writePngsCheckbox.value;
 		writeTemplate = writeTemplateCheckbox.value;
 		writeJson = writeJsonCheckbox.value;
@@ -1419,6 +1481,7 @@ function loadSettings () {
 	if (settings.hasKey(useRulerOriginID)) useRulerOrigin = settings.getBoolean(useRulerOriginID);
 	if (settings.hasKey(corpToCanvasID)) corpToCanvas = settings.getBoolean(corpToCanvasID);
 	if (settings.hasKey(mergeGroupsID)) mergeGroups = settings.getBoolean(mergeGroupsID);
+	if (settings.hasKey(pngToJsonID)) pngToJson = settings.getBoolean(pngToJsonID);
 	if (settings.hasKey(allowTrimLayersID)) allowTrimLayers = settings.getBoolean(allowTrimLayersID);
 	if (settings.hasKey(ignoreGrayLabelLayersID)) ignoreGrayLabelLayers = settings.getBoolean(ignoreGrayLabelLayersID);
 	if (settings.hasKey(ignoreStartsWithUnderscoreLayersID)) ignoreStartsWithUnderscoreLayers = settings.getBoolean(ignoreStartsWithUnderscoreLayersID);
@@ -1452,6 +1515,7 @@ function saveSettings () {
 	settings.putBoolean(useRulerOriginID, useRulerOrigin);
 	settings.putBoolean(corpToCanvasID, corpToCanvas);
 	settings.putBoolean(mergeGroupsID, mergeGroups);
+	settings.putBoolean(pngToJsonID, pngToJson);
 	settings.putBoolean(allowTrimLayersID, allowTrimLayers);
 	settings.putBoolean(ignoreGrayLabelLayersID, ignoreGrayLabelLayers);
 	settings.putBoolean(ignoreStartsWithUnderscoreLayersID, ignoreStartsWithUnderscoreLayers);
